@@ -1,4 +1,4 @@
-package org.activiti.cloud.examples.connectors;
+package com.parsable.workflow.jobFlipper.connectors;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -8,8 +8,6 @@ import org.activiti.cloud.api.process.model.IntegrationResult;
 import org.activiti.cloud.connectors.starter.channels.IntegrationResultSender;
 import org.activiti.cloud.connectors.starter.configuration.ConnectorProperties;
 import org.activiti.cloud.connectors.starter.model.IntegrationResultBuilder;
-import org.activiti.cloud.api.process.model.IntegrationRequest;
-import org.activiti.cloud.api.process.model.IntegrationResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,49 +20,41 @@ import org.springframework.stereotype.Component;
 import static net.logstash.logback.marker.Markers.append;
 
 @Component
-@EnableBinding(ExampleConnectorChannels.class)
-public class ExampleConnector {
-
-    private final Logger logger = LoggerFactory.getLogger(ExampleConnector.class);
+@EnableBinding(JobFlipperChannels.class)
+public class JobFlipperConnector {
+    private final Logger logger = LoggerFactory.getLogger(JobFlipperConnector.class);
 
     @Value("${spring.application.name}")
     private String appName;
-
-    //just a convenience - not recommended in real implementations
-    private String var1Copy = "";
 
     @Autowired
     private ConnectorProperties connectorProperties;
 
     private final IntegrationResultSender integrationResultSender;
 
-    public ExampleConnector(IntegrationResultSender integrationResultSender) {
-
+    public JobFlipperConnector(IntegrationResultSender integrationResultSender) {
         this.integrationResultSender = integrationResultSender;
     }
 
-    @StreamListener(value = ExampleConnectorChannels.EXAMPLE_CONNECTOR_CONSUMER)
-    public void performTask(IntegrationRequest event) throws InterruptedException {
+    @StreamListener(value = JobFlipperChannels.JOB_FLIPPER_CONSUMER)
+    public void flipJob(IntegrationRequest event) throws InterruptedException {
 
-        logger.info(append("service-name",
-                           appName),
-                    ">>> In example-cloud-connector");
+        String logSquawk = ">>> " + JobFlipperConnector.class.getSimpleName() + " was called for instance " + event.getIntegrationContext().getProcessInstanceId();
+        logger.info(append("service-name", appName), logSquawk);
 
-        String var1 = ExampleConnector.class.getSimpleName()+" was called for instance " + event.getIntegrationContext().getProcessInstanceId();
+        // 1. retrieve job id from event
+        // TODO
 
-        var1Copy = String.valueOf(var1);
+        // 2. attempt to start job and set jobStartSuccess based on the value from that attempt
+        // TODO
+        Boolean jobStartSuccess = false;
 
         Map<String, Object> results = new HashMap<>();
-        results.put("var1",
-                    var1);
+        results.put("jobStartSuccess", jobStartSuccess);
+
         Message<IntegrationResult> message = IntegrationResultBuilder.resultFor(event, connectorProperties)
                 .withOutboundVariables(results)
                 .buildMessage();
         integrationResultSender.send(message);
     }
-
-    public String getVar1Copy() {
-        return var1Copy;
-    }
-
 }

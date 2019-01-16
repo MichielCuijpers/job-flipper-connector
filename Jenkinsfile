@@ -55,10 +55,10 @@ spec:
     }
     
     environment {
-      ORG               = "introproventures"
-      APP_NAME          = "example-cloud-connector"
+      ORG               = "parsable"
+      APP_NAME          = "job-flipper-connector"
       CHARTMUSEUM_CREDS = credentials("jenkins-x-chartmuseum")
-      CHARTMUSEUM_GS_BUCKET = "introproventures"
+      CHARTMUSEUM_GS_BUCKET = "parsable"
     }
     stages {
       stage("CI Build and push snapshot") {

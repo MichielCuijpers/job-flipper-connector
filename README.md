@@ -1,2 +1,2 @@
-# example-cloud-connector
-Activiti Cloud Connector Example
+# job-flipper-connector
+Parsable's Connector for Flipping Jobs

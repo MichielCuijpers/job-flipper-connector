@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package org.activiti.cloud.examples.connectors;
+package com.parsable.workflow.jobFlipper.connectors;
 
 import org.springframework.cloud.stream.annotation.Input;
 import org.springframework.messaging.SubscribableChannel;
 
-public interface ExampleConnectorChannels {
+public interface JobFlipperChannels {
 
-    String EXAMPLE_CONNECTOR_CONSUMER = "exampleConnectorConsumer";
+    String JOB_FLIPPER_CONSUMER = "jobFlipperConsumer";
 
-    @Input(EXAMPLE_CONNECTOR_CONSUMER)
-    SubscribableChannel exampleConnectorConsumer();
+    @Input(JOB_FLIPPER_CONSUMER)
+    SubscribableChannel jobFlipperConsumer();
 
 }

@@ -34,11 +34,11 @@ javaOpts:
   xms: 512m
   other: -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -Dsun.zip.disableMemoryMapping=true -XX:+UseParallelGC -XX:MinHeapFreeRatio=5 -XX:MaxHeapFreeRatio=10 -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90
 image:
-  repository: activiti/example-cloud-connector
+  repository: parsable/job-flipper-connector
   tag: 7.0.0.Beta2
   pullPolicy: IfNotPresent
 service:
-  name: example-cloud-connector
+  name: job-flipper-connector
   type: ClusterIP
   externalPort: 80
   internalPort: 8080
@@ -67,7 +67,7 @@ ingress:
   ## Set to true to enable ingress record generation
   enabled: false
 
-  path: /example-cloud-connector
+  path: /job-flipper-connector
 
   ## Set this to true in order to enable TLS on the ingress record
   tls: false

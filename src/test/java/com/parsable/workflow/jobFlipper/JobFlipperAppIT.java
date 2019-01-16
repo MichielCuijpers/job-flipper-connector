@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.activiti.cloud.examples;
+package com.parsable.workflow.jobFlipper;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @TestPropertySource("classpath:application-test.properties")
-public class CloudConnectorAppIT {
+public class JobFlipperAppIT {
 
     @Autowired
     private ApplicationContext context;
