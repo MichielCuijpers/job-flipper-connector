@@ -38,23 +38,44 @@ public class JobFlipperConnector {
 
     @StreamListener(value = JobFlipperChannels.JOB_FLIPPER_CONSUMER)
     public void flipJob(IntegrationRequest event) throws InterruptedException {
+        Message<IntegrationResult> message = buildFlipJobMessage(event);
+        integrationResultSender.send(message);
+    }
+
+    public Message<IntegrationResult> buildFlipJobMessage(IntegrationRequest event) throws InterruptedException {
+        Boolean jobStartSuccess = false;
+        Error error = null;
 
         String logSquawk = ">>> " + JobFlipperConnector.class.getSimpleName() + " was called for instance " + event.getIntegrationContext().getProcessInstanceId();
         logger.info(append("service-name", appName), logSquawk);
 
-        // 1. retrieve job id from event
-        // TODO
-
-        // 2. attempt to start job and set jobStartSuccess based on the value from that attempt
-        // TODO
-        Boolean jobStartSuccess = false;
-
         Map<String, Object> results = new HashMap<>();
+
+        String jobId = String.valueOf(event.getIntegrationContext().getInBoundVariables().get("jobId"));
+
+        // note: when an inbound String variable isn't present, it's set to "null" instead of null
+        if (jobId == "null") {
+            jobId = null;
+        }
+
+        if (jobId == null) {
+            logger.info(append("service-name", appName), ">>> jobId not found");
+            error = new Error("Job ID not found in integration context inbound variables");
+        } else {
+            results.put("jobId", jobId);
+            logger.info(append("service-name", appName), ">>> jobId = [" + jobId + "]");
+        }
+
+        // TODO attempt to start job and set jobStartSuccess based on the value from that attempt
+
+        // Add success boolean and error variables
         results.put("jobStartSuccess", jobStartSuccess);
+        results.put("error", error);
 
         Message<IntegrationResult> message = IntegrationResultBuilder.resultFor(event, connectorProperties)
                 .withOutboundVariables(results)
                 .buildMessage();
-        integrationResultSender.send(message);
+
+        return message;
     }
 }
