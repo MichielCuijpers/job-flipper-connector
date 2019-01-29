@@ -3,6 +3,7 @@ package com.parsable.workflow.jobFlipper.connectors;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.parsable.workflow.jobFlipper.connectors.contextVariables.ContextVariableManipulator;
 import org.activiti.cloud.api.process.model.IntegrationRequest;
 import org.activiti.cloud.api.process.model.IntegrationResult;
 import org.activiti.cloud.connectors.starter.channels.IntegrationResultSender;
@@ -10,6 +11,7 @@ import org.activiti.cloud.connectors.starter.configuration.ConnectorProperties;
 import org.activiti.cloud.connectors.starter.model.IntegrationResultBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.stream.annotation.EnableBinding;
@@ -26,6 +28,8 @@ public class JobFlipperConnector {
 
     @Value("${spring.application.name}")
     private String appName;
+
+    private final Marker SERVICE_NAME_LOG_MARKER = append("service-name", appName);
 
     @Autowired
     private ConnectorProperties connectorProperties;
@@ -45,25 +49,18 @@ public class JobFlipperConnector {
     public Message<IntegrationResult> buildFlipJobMessage(IntegrationRequest event) throws InterruptedException {
         Boolean jobStartSuccess = false;
         Error error = null;
-
-        String logSquawk = ">>> " + JobFlipperConnector.class.getSimpleName() + " was called for instance " + event.getIntegrationContext().getProcessInstanceId();
-        logger.info(append("service-name", appName), logSquawk);
-
         Map<String, Object> results = new HashMap<>();
 
-        String jobId = String.valueOf(event.getIntegrationContext().getInBoundVariables().get("jobId"));
+        String logSquawk = ">>> " + JobFlipperConnector.class.getSimpleName() + " was called for instance " + event.getIntegrationContext().getProcessInstanceId();
+        logger.info(SERVICE_NAME_LOG_MARKER, logSquawk);
 
-        // note: when an inbound String variable isn't present, it's set to "null" instead of null
-        if (jobId == "null") {
-            jobId = null;
-        }
-
+        String jobId = ContextVariableManipulator.getJobIdForIntegrationRequest(event);
         if (jobId == null) {
-            logger.info(append("service-name", appName), ">>> jobId not found");
+            logger.info(SERVICE_NAME_LOG_MARKER, ">>> jobId not found");
             error = new Error("Job ID not found in integration context inbound variables");
         } else {
-            results.put("jobId", jobId);
-            logger.info(append("service-name", appName), ">>> jobId = [" + jobId + "]");
+            results.put(ContextVariableManipulator.generateJobIdAccessorToken(event), jobId);
+            logger.info(SERVICE_NAME_LOG_MARKER, ">>> jobId = [" + jobId + "]");
         }
 
         // TODO attempt to start job and set jobStartSuccess based on the value from that attempt

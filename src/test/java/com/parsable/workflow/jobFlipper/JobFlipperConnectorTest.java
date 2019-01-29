@@ -22,21 +22,25 @@ public class JobFlipperConnectorTest {
     @Test
     public void shouldAcceptJobIdVar() throws Exception {
         String jobIdInput = "my-dummy-job-id";
+        String serviceTaskElementId = "service-task-element-id";
 
         IntegrationResultSender mockSender = new IntegrationResultSenderMock();
         JobFlipperConnector connector = new JobFlipperConnector(mockSender);
 
         IntegrationContextImpl context = new IntegrationContextImpl();
+        context.setActivityElementId(serviceTaskElementId);
+
         Map<String, Object> inboundVariables = new HashMap<>();
-        inboundVariables.put("jobId", jobIdInput);
+        inboundVariables.put("jobId::"+serviceTaskElementId, jobIdInput);
         context.setInBoundVariables(inboundVariables);
+
 
         IntegrationRequest request = new IntegrationRequestMock();
         ((IntegrationRequestMock) request).setContext(context);
 
         Message<IntegrationResult> message = connector.buildFlipJobMessage(request);
 
-        String jobIdOutput = (String) message.getPayload().getIntegrationContext().getOutBoundVariables().get("jobId");
+        String jobIdOutput = (String) message.getPayload().getIntegrationContext().getOutBoundVariables().get("jobId::"+serviceTaskElementId);
 
         assertEquals(jobIdInput, jobIdOutput);
     }
