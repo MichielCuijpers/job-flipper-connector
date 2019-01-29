@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.parsable.workflow.jobFlipper;
+package com.parsable;
 
 import org.activiti.cloud.connectors.starter.configuration.EnableActivitiCloudConnector;
 import org.springframework.boot.SpringApplication;
@@ -23,7 +23,7 @@ import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
 @EnableActivitiCloudConnector
-@ComponentScan({"org.activiti.cloud.connectors.starter","com.parsable.workflow.jobFlipper","org.activiti.cloud.services.common.security"})
+@ComponentScan({"org.activiti.cloud.connectors.starter","org.activiti.cloud.services.common.security"})
 public class JobFlipperApp {
 
     public static void main(String[] args) {

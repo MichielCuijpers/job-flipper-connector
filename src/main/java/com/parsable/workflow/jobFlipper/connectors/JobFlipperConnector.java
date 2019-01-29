@@ -3,12 +3,17 @@ package com.parsable.workflow.jobFlipper.connectors;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.parsable.apiClient.Client;
+import com.parsable.apiClient.ClientImpl;
+import com.parsable.common.Environment;
 import com.parsable.workflow.jobFlipper.connectors.contextVariables.ContextVariableManipulator;
 import org.activiti.cloud.api.process.model.IntegrationRequest;
 import org.activiti.cloud.api.process.model.IntegrationResult;
 import org.activiti.cloud.connectors.starter.channels.IntegrationResultSender;
 import org.activiti.cloud.connectors.starter.configuration.ConnectorProperties;
 import org.activiti.cloud.connectors.starter.model.IntegrationResultBuilder;
+import org.apache.thrift.TException;
+import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
@@ -36,17 +41,20 @@ public class JobFlipperConnector {
 
     private final IntegrationResultSender integrationResultSender;
 
-    public JobFlipperConnector(IntegrationResultSender integrationResultSender) {
+    private final Client client;
+
+    public JobFlipperConnector(IntegrationResultSender integrationResultSender, Client client) {
         this.integrationResultSender = integrationResultSender;
+        this.client = client;
     }
 
     @StreamListener(value = JobFlipperChannels.JOB_FLIPPER_CONSUMER)
-    public void flipJob(IntegrationRequest event) throws InterruptedException {
+    public void flipJob(IntegrationRequest event) throws TException {
         Message<IntegrationResult> message = buildFlipJobMessage(event);
         integrationResultSender.send(message);
     }
 
-    public Message<IntegrationResult> buildFlipJobMessage(IntegrationRequest event) throws InterruptedException {
+    public Message<IntegrationResult> buildFlipJobMessage(IntegrationRequest event) throws TException {
         Boolean jobStartSuccess = false;
         Error error = null;
         Map<String, Object> results = new HashMap<>();
@@ -63,7 +71,13 @@ public class JobFlipperConnector {
             logger.info(SERVICE_NAME_LOG_MARKER, ">>> jobId = [" + jobId + "]");
         }
 
-        // TODO attempt to start job and set jobStartSuccess based on the value from that attempt
+        try {
+            client.setUser(Environment.getAdminUser(), Environment.getAdminPass());
+            client.getJobClient().start(jobId);
+        } catch (TTransportException e) {
+            jobStartSuccess = false;
+            error = new Error(e.getMessage());
+        }
 
         // Add success boolean and error variables
         results.put("jobStartSuccess", jobStartSuccess);
