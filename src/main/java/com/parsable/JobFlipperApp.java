@@ -23,7 +23,7 @@ import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
 @EnableActivitiCloudConnector
-@ComponentScan({"org.activiti.cloud.connectors.starter","org.activiti.cloud.services.common.security"})
+@ComponentScan({"org.activiti.cloud.connectors.starter","com.parsable","org.activiti.cloud.services.common.security"})
 public class JobFlipperApp {
 
     public static void main(String[] args) {

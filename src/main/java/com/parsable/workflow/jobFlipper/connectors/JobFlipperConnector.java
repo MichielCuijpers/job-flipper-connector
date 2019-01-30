@@ -7,6 +7,7 @@ import com.parsable.apiClient.Client;
 import com.parsable.apiClient.ClientImpl;
 import com.parsable.common.Environment;
 import com.parsable.workflow.jobFlipper.connectors.contextVariables.ContextVariableManipulator;
+import com.wi.director.thrift.v1.common.SystemException;
 import org.activiti.cloud.api.process.model.IntegrationRequest;
 import org.activiti.cloud.api.process.model.IntegrationResult;
 import org.activiti.cloud.connectors.starter.channels.IntegrationResultSender;
@@ -35,6 +36,7 @@ public class JobFlipperConnector {
     private String appName;
 
     private final Marker SERVICE_NAME_LOG_MARKER = append("service-name", appName);
+    private final String JOB_START_SUCCESS_TOKEN_PREFIX = "jobStartSuccess::";
 
     @Autowired
     private ConnectorProperties connectorProperties;
@@ -42,6 +44,8 @@ public class JobFlipperConnector {
     private final IntegrationResultSender integrationResultSender;
 
     private final Client client;
+
+    private IntegrationRequest event;
 
     public JobFlipperConnector(IntegrationResultSender integrationResultSender, Client client) {
         this.integrationResultSender = integrationResultSender;
@@ -55,38 +59,76 @@ public class JobFlipperConnector {
     }
 
     public Message<IntegrationResult> buildFlipJobMessage(IntegrationRequest event) throws TException {
-        Boolean jobStartSuccess = false;
-        Error error = null;
-        Map<String, Object> results = new HashMap<>();
+        this.event = event;
 
-        String logSquawk = ">>> " + JobFlipperConnector.class.getSimpleName() + " was called for instance " + event.getIntegrationContext().getProcessInstanceId();
-        logger.info(SERVICE_NAME_LOG_MARKER, logSquawk);
+        logger.info(
+                SERVICE_NAME_LOG_MARKER,
+                "{} was called for instance",
+                JobFlipperConnector.class.getSimpleName(),
+                event.getIntegrationContext().getProcessInstanceId()
+        );
 
         String jobId = ContextVariableManipulator.getJobIdForIntegrationRequest(event);
         if (jobId == null) {
-            logger.info(SERVICE_NAME_LOG_MARKER, ">>> jobId not found");
-            error = new Error("Job ID not found in integration context inbound variables");
-        } else {
-            results.put(ContextVariableManipulator.generateJobIdAccessorToken(event), jobId);
-            logger.info(SERVICE_NAME_LOG_MARKER, ">>> jobId = [" + jobId + "]");
+            String msg = "Job ID not found in integration context inbound variables";
+            logger.info(SERVICE_NAME_LOG_MARKER, msg);
+            return messageResult(event, false, null, msg);
         }
+        logger.info(SERVICE_NAME_LOG_MARKER, "jobId = [" + jobId + "]");
 
+        String adminUser = Environment.getAdminUser();
+        String adminPass = Environment.getAdminPass();
+        logger.info(SERVICE_NAME_LOG_MARKER, "authenticating user '{}' against Parsable API", adminUser);
         try {
-            client.setUser(Environment.getAdminUser(), Environment.getAdminPass());
-            client.getJobClient().start(jobId);
-        } catch (TTransportException e) {
-            jobStartSuccess = false;
-            error = new Error(e.getMessage());
+            client.setUser(adminUser, adminPass);
+        } catch (SystemException e) {
+            logger.error(
+                    SERVICE_NAME_LOG_MARKER,
+                    "encountered {} attempting authenticate against Parsable API: '{}'",
+                    e.getClass().getSimpleName(),
+                    e.getMessage()
+            );
+            return messageResult(event, false, null, e.getMessage());
         }
 
-        // Add success boolean and error variables
-        results.put("jobStartSuccess", jobStartSuccess);
-        results.put("error", error);
+        logger.info(SERVICE_NAME_LOG_MARKER, "starting job via Parsable API");
+        try {
+            client.getJobClient().start(jobId);
+        } catch (SystemException e) {
+            logger.error(
+                    SERVICE_NAME_LOG_MARKER,
+                    "encountered {} attempting start a job via Parsable API: '{}'",
+                    e.getClass().getSimpleName(),
+                    e.getMessage()
+            );
+            return messageResult(event, false, null, e.getMessage());
+        }
 
-        Message<IntegrationResult> message = IntegrationResultBuilder.resultFor(event, connectorProperties)
-                .withOutboundVariables(results)
-                .buildMessage();
+        Message<IntegrationResult> message = messageResult(event, true, jobId, null);
 
         return message;
+    }
+
+    private Message<IntegrationResult> messageResult(IntegrationRequest event, boolean success, String jobId, String error) {
+        Map<String, Object> results = new HashMap<>();
+
+        results.put(generateJobStartSuccessToken(), success);
+
+        if (jobId != null) {
+            results.put(ContextVariableManipulator.generateJobIdAccessorToken(event), jobId);
+        }
+
+        if (error != null) {
+            results.put("error", error);
+        }
+
+        logger.info(SERVICE_NAME_LOG_MARKER, "returning message with outbound variables: {}", results);
+        return IntegrationResultBuilder.resultFor(event, connectorProperties)
+                .withOutboundVariables(results)
+                .buildMessage();
+    }
+
+    private String generateJobStartSuccessToken() {
+        return JOB_START_SUCCESS_TOKEN_PREFIX + event.getIntegrationContext().getActivityElementId();
     }
 }

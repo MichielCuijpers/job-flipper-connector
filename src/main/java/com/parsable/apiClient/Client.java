@@ -21,7 +21,6 @@ import org.apache.thrift.TException;
 import org.apache.thrift.transport.TTransportException;
 import org.springframework.stereotype.Component;
 
-@Component
 public interface Client {
     User setUser(String email, String password) throws TException;
 

@@ -37,6 +37,7 @@ import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.THttpClient;
 import org.apache.thrift.transport.TTransportException;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,6 +45,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+@Component
 public class ClientImpl implements Client {
     private static final String contentType = "application/vnd.mothership.v1+x-thrift-compact";
     private static final String clientVersion = commonConstants.MAJOR_VERSION + "." + commonConstants.MINOR_VERSION + "." + commonConstants.PATCH_VERSION;
